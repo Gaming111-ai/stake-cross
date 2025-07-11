@@ -1,70 +1,26 @@
-import React, { useEffect, useState } from "react";
-import { createClient } from "graphql-ws";
+import React from 'react';
+import { useStakeCrash } from './useStakeCrash';
 
-const App = () => {
-  const [connected, setConnected] = useState(false);
-  const [crashData, setCrashData] = useState(null);
-  const [token, setToken] = useState("");
-
-  useEffect(() => {
-    if (!token) return;
-
-    const client = createClient({
-      url: "wss://stake.pet/_api/websockets",
-      connectionParams: {
-        Authorization: `Bearer ${token}`
-      },
-      lazy: false,
-      retryAttempts: 5,
-    });
-
-    const unsubscribe = client.subscribe(
-      {
-        query: `subscription {
-          crash {
-            id
-            multiplier
-            createdAt
-          }
-        }`,
-      },
-      {
-        next: ({ data }) => {
-          console.log("Received crash data:", data);
-          setCrashData(data.crash);
-        },
-        error: (err) => console.error("Subscription error", err),
-        complete: () => console.log("Subscription complete"),
-      }
-    );
-
-    setConnected(true);
-    return () => unsubscribe();
-  }, [token]);
+function App() {
+  const { crashData, isConnected } = useStakeCrash();
 
   return (
     <div>
       <h1>Crash Predictor</h1>
-      {!connected && (
-        <input
-          type="text"
-          placeholder="Enter your Stake.com Token"
-          onChange={(e) => setToken(e.target.value)}
-        />
-      )}
+      <p>Status: {isConnected ? '🟢 Connected' : '🔴 Disconnected'}</p>
+
       {crashData ? (
         <div>
-          <p><strong>Crash ID:</strong> {crashData.id}</p>
-          <p><strong>Multiplier:</strong> {crashData.multiplier}</p>
-          <p><strong>Time:</strong> {new Date(crashData.createdAt).toLocaleString()}</p>
+          <h2>Live Crash Data:</h2>
+          <p>Crash Point: {crashData.crash_point}x</p>
+          <p>Game ID: {crashData.game_id}</p>
+          <p>Updated At: {new Date(crashData.updated_at).toLocaleString()}</p>
         </div>
-      ) : connected ? (
-        <p>Waiting for crash data...</p>
       ) : (
-        <p>Please enter your token to connect.</p>
+        <p>Waiting for data...</p>
       )}
     </div>
   );
-};
+}
 
 export default App;
